@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "739842360348",
+    "project_id": "altawheed-hajj-app-c43e4",
+    "storage_bucket": "altawheed-hajj-app-c43e4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:739842360348:android:134aaa0f625af96ffd8bd9",
+        "android_client_info": {
+          "package_name": "com.altawheed_hajj_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAayJI0iWBVSZbSt0MFIupuYuHgBgfr_-c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
