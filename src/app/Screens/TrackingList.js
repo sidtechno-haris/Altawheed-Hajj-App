@@ -25,8 +25,9 @@ import { Storage } from "../../constants/Store/mmkv";
 const TrackingList = ({ route, navigation }) => {
   const { t } = useTranslation();
   const { token } = useGlobalState();
+
   const url = "trackList";
-  const { type } = route?.params || {}; // Retrieve the "type" from the route params
+  const { type } = route?.params || {};
 
   const [circle, seCircle] = useMMKVObject("circle", Storage);
 
@@ -35,6 +36,8 @@ const TrackingList = ({ route, navigation }) => {
     queryFn: () => fetchData(url, token),
     enabled: !!token,
   });
+
+  console.log(data);
 
   useEffect(() => {
     seCircle(data);
@@ -47,7 +50,6 @@ const TrackingList = ({ route, navigation }) => {
   if (circle === undefined) return <Loading />;
 
   const renderSections = () => {
-    // If the "type" is "all", show all sections
     if (type === "General") {
       return (
         <>
@@ -56,7 +58,11 @@ const TrackingList = ({ route, navigation }) => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Leader</Text>
               <ContactView
-                url={circle.leader.image}
+                url={
+                  circle.leader.image
+                    ? circle.leader.image
+                    : require("../../../assets/Logo.png")
+                }
                 text={circle.leader.name}
                 distance={circle.leader.distance}
               />
@@ -67,7 +73,7 @@ const TrackingList = ({ route, navigation }) => {
           {circle?.family?.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Family</Text>
-              {circle?.family.map((member, index) => (
+              {circle?.family?.members.map((member, index) => (
                 <ContactView
                   key={index}
                   url={member.image}

@@ -131,5 +131,7 @@
   "Enter a valid phone number": "أدخل رقم هاتف صالح",
   "Group Created successfully": "تم إنشاء المجموعة بنجاح",
   "Please fix the errors": "يرجى تصحيح الأخطاء",
-  "Save": "حفظ"
+  "Save": "حفظ",
+  "Location": "الموقع",
+  "Location is required": "الموقع مطلوب"
 }

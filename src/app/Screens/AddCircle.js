@@ -18,6 +18,7 @@ import PhoneInput from "react-native-phone-number-input";
 import { useGlobalState } from "../../constants/GlobalStorage";
 import { fetchDataWithTokenandParams } from "../../Api/ApiRoute";
 import { useTranslation } from "react-i18next";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 const AddCircle = () => {
   const { t, i18n } = useTranslation();
@@ -96,49 +97,61 @@ const AddCircle = () => {
   };
 
   const handleSave = async () => {
-    let formPost = new FormData(); // Initialize FormData
-
     if (validateForm()) {
-      // Append form data
+      setLoading(true);
+
+      const formPost = new FormData();
       formPost.append("groupName", formData.groupName);
       formPost.append("name", formData.name);
       formPost.append("phoneNumber", formData.phoneNumber);
 
+      // Send image as a file
       if (formData.image) {
         const imageFile = {
-          uri: formData?.image?.uri,
-          name: formData?.image?.fileName,
-          type: formData?.image?.type,
+          uri: formData.image.uri,
+          name: formData.image.fileName,
+          type: formData.image.type, // Assuming the image type is correct
         };
 
         formPost.append("image", imageFile);
       }
 
-      await fetchDataWithTokenandParams(
-        "addCircle",
-        token,
-        formPost,
-        setLoading
-      )
-        .then((data) => {
-          console.log(data);
-        })
-        .catch((error) => console.error(error));
+      try {
+        // Replace fetchDataWithTokenandParams with your actual API call method
+        const response = await fetch(
+          "https://hajjbackend.sidtechno.com/addCircle",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "multipart/form-data", // Make sure the content type is set to multipart/form-data
+              Authorization: `Bearer ${token}`, // Add token if needed
+            },
+            body: formPost, // Attach the FormData
+          }
+        );
 
-      ToastAndroid.show(t("Group Created successfully"), ToastAndroid.SHORT);
+        const responseData = await response.json();
 
-      // Display notification
-      // onDisplayNotification({
-      //   title: "From Admin",
-      //   body: "Member will be added shortly",
-      // });
-
-      setFormData({
-        groupName: "",
-        name: "",
-        phoneNumber: "",
-        image: null,
-      });
+        if (response.ok) {
+          ToastAndroid.show(
+            t("Group Created successfully"),
+            ToastAndroid.SHORT
+          );
+          setFormData({
+            groupName: "",
+            name: "",
+            phoneNumber: "",
+            image: null,
+          });
+        } else {
+          throw new Error(responseData.message || t("Error creating group"));
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        ToastAndroid.show(t("Error creating group"), ToastAndroid.SHORT);
+      } finally {
+        setLoading(false);
+      }
     } else {
       ToastAndroid.show(t("Please fix the errors"), ToastAndroid.SHORT);
     }
@@ -153,78 +166,92 @@ const AddCircle = () => {
         backgroundColor={"#ffffff98"}
       >
         <ScreensHeader Title={t("add")} />
-        <View style={styles.Container}>
-          <View style={{ padding: 15 }}>
-            <TouchableOpacity onPress={handleImagePicker}>
-              <Image
-                source={
-                  formData.image
-                    ? { uri: formData?.image?.uri }
-                    : require("../../../assets/add.png")
-                }
-                style={styles.Image}
-              />
-              <View style={styles.pencil}>
-                <PencilIcon color={"#fff"} size={wp(6)} />
-              </View>
-            </TouchableOpacity>
-            {errors.image ? (
-              <Text style={styles.errorText}>{errors.image}</Text>
-            ) : null}
+        <KeyboardAwareScrollView
+          removeClippedSubviews={false}
+          contentContainerStyle={{
+            alignItems: "center",
+            justifyContent: "flex-start",
+            flexGrow: 1,
+          }}
+          enableOnAndroid={true}
+          extraScrollHeight={hp(3)}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.Container}>
+            <View style={{ padding: 15 }}>
+              <TouchableOpacity onPress={handleImagePicker}>
+                <Image
+                  source={
+                    formData.image
+                      ? { uri: formData?.image?.uri }
+                      : require("../../../assets/add.png")
+                  }
+                  style={styles.Image}
+                />
+                <View style={styles.pencil}>
+                  <PencilIcon color={"#fff"} size={wp(6)} />
+                </View>
+              </TouchableOpacity>
+              {errors.image ? (
+                <Text style={[styles.errorText, { textAlign: "center" }]}>
+                  {errors.image}
+                </Text>
+              ) : null}
 
-            {entry.map((item) => (
-              <View key={item.id}>
-                <Text style={styles.Text}>{t(item.name)}</Text>
+              {entry.map((item) => (
+                <View key={item.id}>
+                  <Text style={styles.Text}>{t(item.name)}</Text>
 
-                {item.name === "Phone Number" ? (
-                  <PhoneInput
-                    ref={phoneInput}
-                    value={formData[item.field]}
-                    defaultCode="US"
-                    layout="first"
-                    onChangeText={(value) => handleChange(value, item.field)}
-                    containerStyle={styles.phoneInputContainer}
-                    textContainerStyle={styles.phoneTextContainer}
-                    textInputProps={{
-                      placeholderTextColor: "#00000055",
-                      placeholder: "000000000",
-                    }}
-                  />
-                ) : (
-                  <TextInput
-                    style={[
-                      styles.Input,
-                      { textAlign: isArabic ? "right" : "left" },
-                    ]}
-                    value={formData[item.field]}
-                    onChangeText={(value) => handleChange(value, item.field)}
-                    placeholder={t(item.name)}
-                    placeholderTextColor={"#00000033"}
-                  />
-                )}
-                {errors[item.field] ? (
-                  <Text
-                    style={[
-                      styles.errorText,
-                      {
-                        textAlign: item.name === "image" ? "center" : "left",
-                      },
-                    ]}
-                  >
-                    {errors[item.field]}
-                  </Text>
-                ) : null}
-              </View>
-            ))}
+                  {item.name === "Phone Number" ? (
+                    <PhoneInput
+                      ref={phoneInput}
+                      value={formData[item.field]}
+                      defaultCode="US"
+                      layout="first"
+                      onChangeText={(value) => handleChange(value, item.field)}
+                      containerStyle={styles.phoneInputContainer}
+                      textContainerStyle={styles.phoneTextContainer}
+                      textInputProps={{
+                        placeholderTextColor: "#00000055",
+                        placeholder: "000000000",
+                      }}
+                    />
+                  ) : (
+                    <TextInput
+                      style={[
+                        styles.Input,
+                        { textAlign: isArabic ? "right" : "left" },
+                      ]}
+                      value={formData[item.field]}
+                      onChangeText={(value) => handleChange(value, item.field)}
+                      placeholder={t(item.name)}
+                      placeholderTextColor={"#00000033"}
+                    />
+                  )}
+                  {errors[item.field] ? (
+                    <Text
+                      style={[
+                        styles.errorText,
+                        {
+                          textAlign: isArabic ? "right" : "left",
+                        },
+                      ]}
+                    >
+                      {errors[item.field]}
+                    </Text>
+                  ) : null}
+                </View>
+              ))}
+            </View>
+            <Button
+              onPress={() => {
+                handleSave();
+              }}
+              style={{ width: wp(90) }}
+              title={t("Save")}
+            />
           </View>
-          <Button
-            onPress={() => {
-              handleSave();
-            }}
-            style={{ width: wp(90) }}
-            title={t("Save")}
-          />
-        </View>
+        </KeyboardAwareScrollView>
       </Background>
     </>
   );

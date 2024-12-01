@@ -10,7 +10,7 @@ import {
 import React, { memo } from "react";
 import * as Icons from "react-native-heroicons/outline";
 import { Colors } from "../../constants/Colors";
-import { hp, wp } from "../../constants/Dimentions";
+import { hp, imageUrl, wp } from "../../constants/Dimentions";
 import { FlatList } from "react-native-gesture-handler";
 import { useQuery } from "@tanstack/react-query";
 import { fetchData } from "../../Api/ApiRoute";
@@ -25,6 +25,7 @@ const BusView = () => {
     queryKey: ["Buses"],
     queryFn: () => fetchData(url, token),
     enabled: !!token,
+    experimental_prefetchInRender: true,
   });
 
   if (isLoading) {
@@ -60,7 +61,7 @@ const BusView = () => {
         removeClippedSubviews={false}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.flatListContent}
-        data={data?.data?.buses}
+        data={data?.data}
         renderItem={({ item, index }) => (
           <TouchableOpacity
             key={index}
@@ -70,7 +71,11 @@ const BusView = () => {
             <View style={styles.gap}>
               <Image
                 style={{ width: wp(11), height: wp(11), borderRadius: 100 }}
-                source={require("../../../assets/haram.png")}
+                source={
+                  item.image
+                    ? { uri: `${imageUrl}${item.image}` }
+                    : require("../../../assets/haram.png")
+                }
               />
               <View>
                 <Text

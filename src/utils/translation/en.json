@@ -131,5 +131,7 @@
   "Enter a valid phone number": "Enter a valid phone number",
   "Group Created successfully": "Group Created successfully",
   "Please fix the errors": "Please fix the errors",
-  "Save": "Save"
+  "Save": "Save",
+  "Location": "Location",
+  "Location is required": "Location is required"
 }

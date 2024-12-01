@@ -18,20 +18,26 @@ import { fetchData } from "../../Api/ApiRoute";
 import { useGlobalState } from "../../constants/GlobalStorage";
 import { useMMKVObject } from "react-native-mmkv";
 import { Storage } from "../../constants/Store/mmkv";
+import { useIsFocused } from "@react-navigation/native";
 
 const EmergencyCircle = ({ navigation }) => {
   const { t } = useTranslation();
   const [refreshing, setRefreshing] = useState(false);
+  const isFocused = useIsFocused();
 
   const [contacts, setContacts] = useMMKVObject("contact", Storage);
 
   const { token, setGroupId } = useGlobalState();
   const url = "getMyCircleContact";
-  const { data, error, isLoading, refetch } = useQuery({
+  const { data, error, isLoading, refetch, isRefetching } = useQuery({
     queryKey: [url],
     queryFn: () => fetchData(url, token),
     enabled: !!token,
   });
+
+  useEffect(() => {
+    if (data) refetch();
+  }, [isFocused]);
 
   if (error) {
     ToastAndroid.show("Error loading data", ToastAndroid.LONG);
@@ -43,9 +49,9 @@ const EmergencyCircle = ({ navigation }) => {
   }, [refetch]);
 
   const generalContact = {
-    groupImage: require("../../../assets/contact.png"), // You can use a specific image or URL
+    groupImage: require("../../../assets/contact.png"),
     groupName: "General",
-    number: "All", // This is a placeholder, adjust as needed
+    number: "All",
   };
 
   useEffect(() => {
@@ -56,7 +62,7 @@ const EmergencyCircle = ({ navigation }) => {
 
   return (
     <>
-      {contacts === undefined && <Loading />}
+      {contacts === undefined || isLoading || isRefetching ? <Loading /> : null}
       <Background
         source={require("../../../assets/image.png")}
         backgroundColor={"#ffffff99"}
@@ -72,11 +78,6 @@ const EmergencyCircle = ({ navigation }) => {
           removeClippedSubviews={false}
           contentContainerStyle={styles.flatlist}
           data={contacts} // Use the combined list
-          ListFooterComponent={() => {
-            {
-              isLoading && <Loading />;
-            }
-          }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}

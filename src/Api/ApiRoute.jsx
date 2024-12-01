@@ -18,7 +18,7 @@ export const fetchData = async (url, token) => {
   }
 };
 
-export const deleteAccountAPI = async (url = 'deleteMyAccount', token) => {
+export const deleteAccountAPI = async (url = "deleteMyAccount", token) => {
   try {
     const response = await axios.delete(`${BASE_URL}/${url}`, {
       headers: {
@@ -70,7 +70,7 @@ export const fetchDataWithTokenandParams = async (
     console.error("Error in fetchDataWithTokenandParams:", error.message);
     return { data: null, error };
   } finally {
-    setLoading(false);
+    setLoading(false); // Ensure loading is turned off after request completion
   }
 };
 

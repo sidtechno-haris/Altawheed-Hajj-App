@@ -1,12 +1,4 @@
-import {
-  ActivityIndicator,
-  FlatList,
-  ImageBackground,
-  StyleSheet,
-  ToastAndroid,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, ToastAndroid, TouchableOpacity, View } from "react-native";
 import React, { memo, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -32,7 +24,7 @@ import NamazList from "../../components/ScreenComponents/NamazList";
 import { useQuery } from "@tanstack/react-query";
 import { fetchData } from "../../Api/ApiRoute";
 import { useGlobalState } from "../../constants/GlobalStorage";
-import { ScrollView } from "react-native-gesture-handler";
+import { ScrollView, FlatList } from "react-native-gesture-handler";
 import moment from "moment";
 
 const PrayerTime = () => {
@@ -54,7 +46,7 @@ const PrayerTime = () => {
     const height = interpolate(
       animatedVal.value,
       [0, 1],
-      [40, 180],
+      [40, 250],
       Extrapolation.CLAMP
     );
     return {
@@ -96,7 +88,7 @@ const PrayerTime = () => {
 
   const url = `getPrayerTimes/${detect?.lat}/${detect?.long}/${selectedDate}`;
 
-  const { data, error, isLoading, refetch } = useQuery({
+  const { data, error, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["getPrayerTimes"],
     queryFn: () => fetchData(url, token),
     enabled: !!token && !!cordinate,
@@ -115,13 +107,13 @@ const PrayerTime = () => {
 
   return (
     <>
-      {isLoading && <Loading />}
+      {isLoading || (isRefetching && <Loading />)}
       <Background
         backgroundColor={Colors.white + 99}
         source={require("../../../assets/image.png")}
       >
         <ScreensHeader Title={t("Times")} />
-        <ScrollView>
+        <ScrollView contentContainerStyle={{ paddingBottom: 50 }}>
           <View style={styles.dateContainer}>
             <CalendarDaysIcon color={Colors.dark} size={wp(5.3)} />
             <Text style={styles.dateText}>{data?.formattedDated}</Text>
@@ -142,7 +134,6 @@ const PrayerTime = () => {
             </TouchableOpacity>
 
             <FlatList
-              scrollEnabled={false}
               removeClippedSubviews={false}
               contentContainerStyle={{ paddingTop: 5 }}
               data={keys}
@@ -189,7 +180,6 @@ const PrayerTime = () => {
               setSelected(day.dateString);
               setSelectedDate(day.day);
               refetch();
-              ToastAndroid.show("Loading...", ToastAndroid.LONG);
             }}
             markedDates={{
               [selected]: {

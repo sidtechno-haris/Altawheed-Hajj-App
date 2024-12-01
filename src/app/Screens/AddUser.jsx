@@ -18,8 +18,14 @@ import PhoneInput from "react-native-phone-number-input";
 import { useGlobalState } from "../../constants/GlobalStorage";
 import { fetchDataWithTokenandParams } from "../../Api/ApiRoute";
 import { onDisplayNotification } from "../../constants/LocalNotification";
+import { useTranslation } from "react-i18next";
+import { ScrollView } from "react-native-gesture-handler";
+import { KeyboardAvoidingScrollView } from "react-native-keyboard-avoiding-scroll-view";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 const AddUser = () => {
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language === "ar";
   const [formData, setFormData] = useState({
     groupName: "",
     name: "",
@@ -28,15 +34,14 @@ const AddUser = () => {
   });
 
   const [errors, setErrors] = useState({}); // Error state for validation
-  const { language, token } = useGlobalState();
+  const { token, groupId } = useGlobalState();
   const phoneInput = useRef(null);
   const [loading, setLoading] = useState(false);
 
   const entry = [
-    { id: 1, name: "Group Name", field: "groupName", large: false },
-    { id: 2, name: "Name", field: "name", large: false },
-    { id: 3, name: "Location", field: "location", large: false },
-    { id: 4, name: "Number", field: "phoneNumber", large: false },
+    { id: 1, name: "Name", field: "name", large: false },
+    { id: 2, name: "Location", field: "location", large: false },
+    { id: 3, name: "Phone Number", field: "phoneNumber", large: false },
   ];
 
   const handleImagePicker = async () => {
@@ -48,7 +53,7 @@ const AddUser = () => {
     });
 
     if (result.didCancel) {
-      ToastAndroid.show("No image selected", ToastAndroid.SHORT);
+      ToastAndroid.show(t("No image selected"), ToastAndroid.SHORT);
     } else if (result.assets && result.assets.length > 0) {
       setFormData((prevData) => ({
         ...prevData,
@@ -71,26 +76,26 @@ const AddUser = () => {
     const newErrors = {};
 
     if (!formData.image) {
-      newErrors.image = "Image is required";
+      newErrors.image = t("Image is required");
       isValid = false;
     }
-    if (!formData.groupName) {
-      newErrors.groupName = "Group Name is required";
-      isValid = false;
-    }
+    // if (!formData.groupName) {
+    //   newErrors.groupName = t("Group Name is required");
+    //   isValid = false;
+    // }
     if (!formData.name) {
-      newErrors.name = "Name is required";
+      newErrors.name = t("Name is required");
       isValid = false;
     }
     if (!formData.location) {
-      newErrors.location = "location is required";
+      newErrors.location = t("location is required");
       isValid = false;
     }
     if (
       !formData.phoneNumber ||
       !phoneInput.current?.isValidNumber(formData.phoneNumber)
     ) {
-      newErrors.phoneNumber = "Enter a valid phone number";
+      newErrors.phoneNumber = t("Enter a valid phone number");
       isValid = false;
     }
 
@@ -99,13 +104,15 @@ const AddUser = () => {
   };
 
   const handleSave = async () => {
-    let formPost = new FormData(); // Initialize FormData
-
     if (validateForm()) {
-      // Append form data
-      formPost.append("groupName", formData.groupName);
+      setLoading(true);
+      let formPost = new FormData();
+
       formPost.append("name", formData.name);
+      formPost.append("long", 0);
+      formPost.append("lat", 0);
       formPost.append("phoneNumber", formData.phoneNumber);
+      formPost.append("groupId", groupId);
 
       if (formData.image) {
         const imageFile = {
@@ -117,34 +124,52 @@ const AddUser = () => {
         formPost.append("image", imageFile);
       }
 
-      await fetchDataWithTokenandParams(
-        "addCircle",
-        token,
-        formPost,
-        setLoading
-      )
-        .then((data) => {
-          console.log(data);
-        })
-        .catch((error) => console.error(error));
+      try {
+        // Make POST request using axios
+        const response = await fetch(
+          "https://hajjbackend.sidtechno.com/addMemberInMyCircle",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "multipart/form-data", // Make sure the content type is set to multipart/form-data
+              Authorization: `Bearer ${token}`, // Add token if needed
+            },
+            body: formPost, // Attach the FormData
+          }
+        );
 
-      ToastAndroid.show("Group Created successfully", ToastAndroid.SHORT);
+        const responseData = await response.json();
 
-      // Display notification
-      onDisplayNotification({
-        title: "Al-Tawheed",
-        body: "Member will be added shortly",
-      });
+        console.log(responseData);
 
-      // Reset form data
-      setFormData({
-        groupName: "",
-        name: "",
-        phoneNumber: "",
-        image: null,
-      });
+        if (response.ok) {
+          ToastAndroid.show(t("User added successfully"), ToastAndroid.SHORT);
+
+          onDisplayNotification({
+            title: "Al-Tawheed",
+            body: "Member will be added shortly",
+          });
+          setFormData({
+            name: "",
+            phoneNumber: "",
+            image: null,
+          });
+        } else {
+          throw new Error(responseData.message || t("Error creating group"));
+        }
+      } catch (error) {
+        console.error(
+          "Error adding user:",
+          error.response?.data || error.message
+        );
+        ToastAndroid.show(t("Failed to add user"), ToastAndroid.SHORT);
+      } finally {
+        // Ensure loading state is reset
+        setLoading(false);
+      }
     } else {
-      ToastAndroid.show("Please fix the errors", ToastAndroid.SHORT);
+      // Show validation errors
+      ToastAndroid.show(t("Please fix the errors"), ToastAndroid.SHORT);
     }
   };
 
@@ -156,76 +181,93 @@ const AddUser = () => {
         source={require("../../../assets/image.png")}
         backgroundColor={"#ffffff98"}
       >
-        <ScreensHeader Title={"Add Circle"} />
-        <View style={styles.Container}>
-          <View style={{ padding: 15 }}>
-            <TouchableOpacity onPress={handleImagePicker}>
-              <Image
-                source={
-                  formData.image
-                    ? { uri: formData?.image?.uri }
-                    : require("../../../assets/add.png")
-                }
-                style={styles.Image}
-              />
-              <View style={styles.pencil}>
-                <PencilIcon color={"#fff"} size={wp(6)} />
-              </View>
-            </TouchableOpacity>
-            {errors.image ? (
-              <Text style={styles.errorText}>{errors.image}</Text>
-            ) : null}
+        <ScreensHeader Title={t("Add Circle")} />
+        <KeyboardAwareScrollView
+          removeClippedSubviews={false}
+          contentContainerStyle={{
+            alignItems: "center",
+            justifyContent: "flex-start",
+            flexGrow: 1,
+          }}
+          enableOnAndroid={true}
+          extraScrollHeight={hp(3)}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.Container}>
+            <View style={{ padding: 15 }}>
+              <TouchableOpacity onPress={handleImagePicker}>
+                <Image
+                  source={
+                    formData.image
+                      ? { uri: formData?.image?.uri }
+                      : require("../../../assets/add.png")
+                  }
+                  style={styles.Image}
+                />
+                <View style={styles.pencil}>
+                  <PencilIcon color={"#fff"} size={wp(6)} />
+                </View>
+              </TouchableOpacity>
+              {errors.image ? (
+                <Text style={[styles.errorText, { textAlign: "center" }]}>
+                  {errors.image}
+                </Text>
+              ) : null}
 
-            {entry.map((item) => (
-              <View key={item.id}>
-                <Text style={styles.Text}>{item.name}</Text>
+              {entry.map((item) => (
+                <View key={item.id}>
+                  <Text style={styles.Text}>{t(item.name)}</Text>
 
-                {item.name === "Number" ? (
-                  <PhoneInput
-                    ref={phoneInput}
-                    value={formData[item.field]}
-                    defaultCode="US"
-                    layout="first"
-                    onChangeText={(value) => handleChange(value, item.field)}
-                    containerStyle={styles.phoneInputContainer}
-                    textContainerStyle={styles.phoneTextContainer}
-                    textInputProps={{
-                      placeholderTextColor: "#00000055",
-                      placeholder: "000000000",
-                    }}
-                  />
-                ) : (
-                  <TextInput
-                    style={item.large ? styles.InputLarge : styles.Input}
-                    value={formData[item.field]}
-                    onChangeText={(value) => handleChange(value, item.field)}
-                    placeholder={item.name}
-                    placeholderTextColor={"#00000033"}
-                  />
-                )}
-                {errors[item.field] ? (
-                  <Text
-                    style={[
-                      styles.errorText,
-                      {
-                        textAlign: item.name === "image" ? "center" : "left",
-                      },
-                    ]}
-                  >
-                    {errors[item.field]}
-                  </Text>
-                ) : null}
-              </View>
-            ))}
+                  {item.name === "Phone Number" ? (
+                    <PhoneInput
+                      ref={phoneInput}
+                      value={formData[item.field]}
+                      defaultCode="US"
+                      layout="first"
+                      onChangeText={(value) => handleChange(value, item.field)}
+                      containerStyle={styles.phoneInputContainer}
+                      textContainerStyle={styles.phoneTextContainer}
+                      textInputProps={{
+                        placeholderTextColor: "#00000055",
+                        placeholder: "000000000",
+                      }}
+                    />
+                  ) : (
+                    <TextInput
+                      style={[
+                        styles.Input,
+                        { textAlign: isArabic ? "right" : "left" },
+                      ]}
+                      value={formData[item.field]}
+                      onChangeText={(value) => handleChange(value, item.field)}
+                      placeholder={t(item.name)}
+                      placeholderTextColor={"#00000033"}
+                    />
+                  )}
+                  {errors[item.field] ? (
+                    <Text
+                      style={[
+                        styles.errorText,
+                        {
+                          textAlign: isArabic ? "right" : "left",
+                        },
+                      ]}
+                    >
+                      {errors[item.field]}
+                    </Text>
+                  ) : null}
+                </View>
+              ))}
+            </View>
+            <Button
+              onPress={() => {
+                handleSave();
+              }}
+              style={{ width: wp(90) }}
+              title={t("Save")}
+            />
           </View>
-          <Button
-            onPress={() => {
-              handleSave();
-            }}
-            style={{ width: wp(90) }}
-            title={"Save"}
-          />
-        </View>
+        </KeyboardAwareScrollView>
       </Background>
     </>
   );

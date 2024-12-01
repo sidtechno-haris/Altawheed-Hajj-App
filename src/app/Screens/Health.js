@@ -41,6 +41,8 @@ const Health = () => {
     keepPreviousData: true,
   });
 
+  console.log("Health", data);
+
   if (error) {
     return (
       <View style={styles.contentWrapper}>

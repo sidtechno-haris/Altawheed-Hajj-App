@@ -12,9 +12,9 @@ import { useTranslation } from "react-i18next";
 
 const AboutCompany = () => {
   const url = "aboutus";
-  const { t, i18n  } = useTranslation();
-  console.log(i18n.language);
-  const aboutUsField = i18n.language === 'en' ? 'aboutus_eng' : 'aboutus_arb';
+  const { t, i18n } = useTranslation();
+
+  const aboutUsField = i18n.language === "en" ? "aboutus_eng" : "aboutus_arb";
 
   const { token } = useGlobalState();
   const { data, isLoading, error } = useQuery({
@@ -25,8 +25,8 @@ const AboutCompany = () => {
 
   const tagsStyles = {
     p: {
-      padding:0,
-      margin:0,
+      padding: 0,
+      margin: 0,
       fontSize: wp(3.6),
       color: Colors.primary,
       ...GlobalStyles.Arabic,
